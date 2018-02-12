@@ -8,15 +8,20 @@ class dataset_container:
     processing is performed to reject invalid data when appending new points.
     """
     
-    def __init__(self, type):
+    def __init__(self, type, **kwargs):
         """
         Initialize the dataset with the type. Type selects processing for 
         valid data when appending points.
         """
+        from datetime import timedelta
         self.type = type
         self.datapoints = []
         self.__index = 0
-    
+        if 'time_resolution' in kwargs:
+            self.__time_resolution = kwargs['time_resolution']
+        else:
+            self.__time_resolution = timedelta(minutes=1)
+
     def append(self, timestamp, value):
         """
         Append a datapoint(timestamp, value) to the dataset. Depending on the
@@ -83,6 +88,40 @@ class dataset_container:
         else:
             self.__index = 0
             raise StopIteration
+    
+    def time_resolution(self, value = None):
+        """
+        Manage the datasets time resolution. If called without a value, return
+        the current time resolution. If a value is passed, it is set as the new
+        time resolution. The value must be >= 1 min, or an error will be 
+        raised.
+        """
+        from datetime import timedelta
+        if not value is None:
+            if value < timedelta(minutes=1):
+                raise ValueError('Time resolution cannot be lower than 1 min.')
+            else:
+                self.__time_resolution = value
+        else:
+            return self.__time_resolution
+    
+    def timestamp_start(self):
+        """
+        Return first timestamp for the dataset.
+        """
+        return min(self['timestamps'])
+    
+    def timestamp_end(self):
+        """
+        Return last timestamp for the dataset.
+        """
+        return max(self['timestamps'])
+    
+    def timerange(self):
+        """
+        Return the timerange [start, end] of the dataset as a list.
+        """
+        return [self.timestamp_start(), self.timestamp_end()]
         
 class datapoint:
     """
