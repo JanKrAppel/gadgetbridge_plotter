@@ -126,6 +126,10 @@ class gb_database:
             - activity
             - steps
         """
+        from device_db_mapping import datasets
+        if not dataset in datasets:
+            raise LookupError('Dataset not available, must be in ' + \
+                              str(datasets))
         self.__query(self.__build_querystring(dataset))
         
     def retrieve_dataset(self, dataset):
@@ -143,48 +147,16 @@ class gb_database:
             - steps
         """
         from datetime import datetime
+        from dataset_container import dataset_container
         self.query_dataset(dataset)
-        res = {'timestamp': [], dataset: []}
-        for row in self.results:
-            res['timestamp'].append(datetime.fromtimestamp(row[0]))
-            res[dataset].append(row[1])
-        return self.__postprocess_dataset(res)
+        res = dataset_container(dataset)
+        for ts, val in self.results:
+            res.append(datetime.fromtimestamp(ts), val)
+        return res
     
-    def __postprocess_dataset(self, dataset):
-        """
-        Call appropriate postprocessing function for the dataset.
-        """
-        if 'heartrate' in dataset:
-            return self.__postprocess_hr(dataset)
-        elif 'intensity' in dataset:
-            return self.__postprocess_intensity(dataset)
-        else:
-            return dataset
-        
-    def __postprocess_hr(self, heartrate_dataset):
-        """
-        Postprocess HR datasets. Filters out values that match the following:
-            - HR == 255
-            - HR <= 0
-        """
-        res = {'timestamp': [], 'heartrate': []}
-        for timestamp, heartrate in zip(heartrate_dataset['timestamp'], 
-                                        heartrate_dataset['heartrate']):
-            if not (heartrate == 255) + (heartrate <= 0):
-                res['timestamp'].append(timestamp)
-                res['heartrate'].append(heartrate)
-        return res
-        
-    def __postprocess_intensity(self, intensity_dataset):
-        """
-        Postprocess intensity datasets. Filters out values that match the 
-        following:
-            - intensity == 255
-        """
-        res = {'timestamp': [], 'intensity': []}
-        for timestamp, intensity in zip(intensity_dataset['timestamp'], 
-                                        intensity_dataset['intensity']):
-            if not (intensity == 255):
-                res['timestamp'].append(timestamp)
-                res['intensity'].append(intensity)
-        return res
+if __name__ == '__main__':
+    db = gb_database('/home/appel/ownCloud/Gadgetbridge/data.db', 'MI_BAND')
+    res = db.retrieve_dataset('heartrate')
+    from matplotlib import pyplot as plt
+    plt.plot(res['timestamps'], res['values'])
+    plt.show()

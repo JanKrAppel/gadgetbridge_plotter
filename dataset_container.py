@@ -23,7 +23,7 @@ class dataset_container:
         type, checks for validity are performed, and if invalid, the data point
         may be rejected.
         """
-        self.__postprocess_datapoint(datapoint(timestamp, value)):
+        self.__postprocess_datapoint(datapoint(timestamp, value))
 
     def __postprocess_datapoint(self, datapoint):
         """
