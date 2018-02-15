@@ -132,7 +132,7 @@ class gb_database:
                               str(datasets))
         self.__query(self.__build_querystring(dataset))
         
-    def retrieve_dataset(self, dataset):
+    def retrieve_dataset(self, dataset, **kwargs):
         """
         Retrieve a dataset. Returns a dict with two entries containing a list 
         each:
@@ -149,14 +149,17 @@ class gb_database:
         from datetime import datetime
         from dataset_container import dataset_container
         self.query_dataset(dataset)
-        res = dataset_container(dataset)
+        res = dataset_container(dataset, **kwargs)
         for ts, val in self.results:
             res.append(datetime.fromtimestamp(ts), val)
         return res
     
 if __name__ == '__main__':
-    db = gb_database('/home/appel/ownCloud/Gadgetbridge/data.db', 'MI_BAND')
-    res = db.retrieve_dataset('heartrate')
+    from datetime import timedelta
     from matplotlib import pyplot as plt
-    plt.plot(res['timestamps'], res['values'])
-    plt.show()
+    db = gb_database('/home/appel/ownCloud/Gadgetbridge/data.db', 'MI_BAND')
+    res = db.retrieve_dataset('heartrate', time_resolution=timedelta(days=1))
+    bins, timestamps, values = res.downsample_histogram()
+    plt.pcolormesh(timestamps, bins, values.T)
+    plt.savefig('test.png')
+    

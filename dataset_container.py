@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from array import array
 
 class dataset_container:
     """
@@ -8,13 +9,13 @@ class dataset_container:
     processing is performed to reject invalid data when appending new points.
     """
     
-    def __init__(self, type, **kwargs):
+    def __init__(self, dataset_type, **kwargs):
         """
         Initialize the dataset with the type. Type selects processing for 
         valid data when appending points.
         """
         from datetime import timedelta
-        self.type = type
+        self.type = dataset_type
         self.datapoints = []
         self.__index = 0
         if 'time_resolution' in kwargs:
@@ -122,6 +123,88 @@ class dataset_container:
         Return the timerange [start, end] of the dataset as a list.
         """
         return [self.timestamp_start(), self.timestamp_end()]
+    
+    def __downsample_data(self, func):
+        """
+        Arbitrary downsample function. Pass a callable that performs the actual
+        downsampling. func should accept an array of values and return a single
+        number. 
+        """
+        from numpy import array
+        cur_time = self.timestamp_start()
+        res_timestamps = []
+        res_values = []
+        while(cur_time <= self.timestamp_end()):
+            sliced_data = self.__timeslice_data(cur_time, cur_time + 
+                                                self.time_resolution())
+            val = func(sliced_data['values'])
+            res_timestamps.append(cur_time)
+            res_values.append(val)
+            cur_time += self.time_resolution()
+        #TODO: Change this to return a plotter object when I finish implementing it
+        res_timestamps = array(res_timestamps)
+        res_values = array(res_values)
+        return [res_timestamps, res_values]
+    
+    def downsample_mean(self):
+        """
+        Downsample data using the Numpy mean function.
+        """
+        from numpy import mean
+        return self.__downsample_data(mean)
+    
+    def downsample_median(self):
+        """
+        Downsample data using the Numpy median function.
+        """
+        from numpy import median
+        return self.__downsample_data(median)
+    
+    def downsample_histogram(self, hist_min=None, hist_max=None, 
+                             resolution=5):
+        from numpy import array, arange, amin, amax, histogram
+        if hist_min is None:
+            #Take the minimum, round to nearest 10 and go down 10
+            hist_min = int(amin(self['values'])/10)*10# - 10
+        if hist_max is None:
+            #Take the maximum, round to nearest 10 and go up 10
+            hist_max = int(amax(self['values'])/10)*10# + 10
+        bins = arange(hist_min, hist_max, resolution)
+        cur_time = self.timestamp_start()
+        res_timestamps = []
+        res_histogram = []
+        while(cur_time <= self.timestamp_end()):
+            sliced_data = self.__timeslice_data(cur_time, cur_time + 
+                                                self.time_resolution())
+        
+            hist = histogram(sliced_data['values'], bins, density=True)[0]
+            res_timestamps.append(cur_time)
+            res_histogram.append(hist)
+            cur_time += self.time_resolution()
+        res_timestamps.append(self.timestamp_end())
+        #TODO: Change this to return a plotter object when I finish implementing it
+        res_timestamps = array(res_timestamps)
+        res_histogram = array(res_histogram)
+        return [bins, res_timestamps, res_histogram]
+    
+    def downsample_sum(self):
+        """
+        Downsample data using the Numpy sum function.
+        """
+        from numpy import sum
+        return self.__downsample_data(sum)
+    
+    def __timeslice_data(self, timestamp_start, timestamp_end):
+        #Helper function to perform the actual time slicing common to
+        #downsample_mean and downsample_median
+        from numpy import array, column_stack
+        timestamps, values = array(self['timestamps']), array(self['values'])
+        mask = (timestamps >= timestamp_start)*(timestamps < timestamp_end)
+        res = dataset_container(self.type)
+        res.time_resolution(value=self.time_resolution())
+        for timestamp, value in column_stack((timestamps[mask], values[mask])):
+            res.append(timestamp, value)
+        return res
         
 class datapoint:
     """
