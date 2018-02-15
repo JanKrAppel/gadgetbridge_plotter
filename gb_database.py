@@ -53,7 +53,11 @@ class gb_database:
         self.__query('SELECT name FROM sqlite_master WHERE type="table";')
         self.tables = [x[0] for x in self.results.all()]
         self.device = device
-        self.__db_names = device_db_mapping
+        self.__db_names = device_db_mapping[self.device]
+        print type(device_db_mapping)
+        print type(device_db_mapping[self.device])
+        print type(self.__db_names)
+        print type(self.__db_names.keys())
         
     def __del__(self):
         self.__cursor.close()
@@ -111,10 +115,9 @@ class gb_database:
             - steps
         """
         query_template = 'SELECT {dataset_col:s} FROM {table:s};'
-        db_names = self.__db_names[self.device]
-        return query_template.format(dataset_col=db_names['timestamp_col'] + \
-                                         ', ' + db_names[dataset + '_col'],
-                                     table=db_names['table'])
+        return query_template.format(dataset_col=self.__db_names['timestamp'] + \
+                                         ', ' + self.__db_names[dataset],
+                                     table=self.__db_names['table'])
         
     def query_dataset(self, dataset):
         """
@@ -126,7 +129,9 @@ class gb_database:
             - activity
             - steps
         """
-        from device_db_mapping import datasets
+        datasets = self.__db_names.keys()
+        datasets.remove('table')
+        datasets.remove('timestamp')
         if not dataset in datasets:
             raise LookupError('Dataset not available, must be in ' + \
                               str(datasets))
@@ -159,7 +164,7 @@ if __name__ == '__main__':
     from sys import argv
     from matplotlib import gridspec, pyplot as plt
     time_resolution = timedelta(days=1)
-    db = gb_database(argv[1], 'MI_BAND')
+    db = gb_database(argv[1], 'MI Band')
     heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
     steps = db.retrieve_dataset('steps', time_resolution=time_resolution)
     fig = plt.figure()
