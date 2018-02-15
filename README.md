@@ -1,6 +1,13 @@
-A very WIP toolkit to plot data from a Gadgetbridge database. For now, it downsamples data to a resolution of 1 day, then plots a large 2D histogram of heartrate per day, and the sum of steps per day below it. Time resolution and plot sequence can, for now, be set by editing the bottom of `gb_database.py`. In the future, it will be configurable.
+A very WIP toolkit to plot data from a Gadgetbridge database. For now, it downsamples data from a MI Band 2 to a resolution of 1 day, then plots a large 2D histogram of heartrate per day, and the sum of steps per day below it. Time resolution and plot sequence can, for now, be set by editing the bottom of `gb_database.py`. In the future, it will be configurable. In principle, other devices should work as well, but I have not been able to test it.
 
-Available datasets:
+Supported devices:
+
+- MI Band
+- HPlus
+- NO.1 F1
+- Pebble
+
+Available datasets (for MI Band 2, your device may vary):
 
 - heartrate
 - activity
