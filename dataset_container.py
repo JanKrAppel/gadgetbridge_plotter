@@ -131,6 +131,7 @@ class dataset_container:
         number. 
         """
         from numpy import array
+        from plotting import line_plotter
         cur_time = self.timestamp_start()
         res_timestamps = []
         res_values = []
@@ -141,10 +142,7 @@ class dataset_container:
             res_timestamps.append(cur_time)
             res_values.append(val)
             cur_time += self.time_resolution()
-        #TODO: Change this to return a plotter object when I finish implementing it
-        res_timestamps = array(res_timestamps)
-        res_values = array(res_values)
-        return [res_timestamps, res_values]
+        return line_plotter(self.type, array(res_timestamps), array(res_values))
     
     def downsample_mean(self):
         """
@@ -163,12 +161,13 @@ class dataset_container:
     def downsample_histogram(self, hist_min=None, hist_max=None, 
                              resolution=5):
         from numpy import array, arange, amin, amax, histogram
+        from plotting import hist_plotter
         if hist_min is None:
-            #Take the minimum, round to nearest 10 and go down 10
-            hist_min = int(amin(self['values'])/10)*10# - 10
+            #Take the minimum, round to nearest 10
+            hist_min = int(amin(self['values'])/10)*10
         if hist_max is None:
-            #Take the maximum, round to nearest 10 and go up 10
-            hist_max = int(amax(self['values'])/10)*10# + 10
+            #Take the maximum, round to nearest 10
+            hist_max = int(amax(self['values'])/10)*10
         bins = arange(hist_min, hist_max, resolution)
         cur_time = self.timestamp_start()
         res_timestamps = []
@@ -182,11 +181,9 @@ class dataset_container:
             res_histogram.append(hist)
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
-        #TODO: Change this to return a plotter object when I finish implementing it
-        res_timestamps = array(res_timestamps)
-        res_histogram = array(res_histogram)
-        return [bins, res_timestamps, res_histogram]
-    
+        return hist_plotter(self.type, array(res_timestamps), bins, 
+                            array(res_histogram))
+
     def downsample_sum(self):
         """
         Downsample data using the Numpy sum function.

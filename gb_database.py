@@ -156,10 +156,18 @@ class gb_database:
     
 if __name__ == '__main__':
     from datetime import timedelta
-    from matplotlib import pyplot as plt
-    db = gb_database('/home/appel/ownCloud/Gadgetbridge/data.db', 'MI_BAND')
-    res = db.retrieve_dataset('heartrate', time_resolution=timedelta(days=1))
-    bins, timestamps, values = res.downsample_histogram()
-    plt.pcolormesh(timestamps, bins, values.T)
-    plt.savefig('test.png')
-    
+    from sys import argv
+    from matplotlib import gridspec, pyplot as plt
+    time_resolution = timedelta(days=1)
+    db = gb_database(argv[1], 'MI_BAND')
+    heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
+    steps = db.retrieve_dataset('steps', time_resolution=time_resolution)
+    fig = plt.figure()
+    gs = gridspec.GridSpec(2,1,height_ratios=[4,1])
+    plt.subplot(gs[0])
+    heartrate.downsample_histogram().plot()
+    plt.xticks([])
+    plt.subplot(gs[1])
+    plt.subplots_adjust(hspace=0)
+    steps.downsample_sum().plot()
+    plt.savefig(argv[2])
