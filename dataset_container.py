@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from array import array
 
 class dataset_container:
     """
@@ -15,6 +14,7 @@ class dataset_container:
         valid data when appending points.
         """
         from datetime import timedelta
+        from filter_provider import filter_provider
         self.type = dataset_type
         self.datapoints = []
         self.__index = 0
@@ -22,6 +22,19 @@ class dataset_container:
             self.__time_resolution = kwargs['time_resolution']
         else:
             self.__time_resolution = timedelta(minutes=1)
+        self.__filters = filter_provider()
+        self.__filtered_data = None
+        
+    def add_filter(self, filter_type, **kwargs):
+        """
+        Add a new filter to the filter provider. filter_type selects the filter
+        that will be applied, any other parameter must be named and will be 
+        passed to the actual filter function.
+        """
+        self.__filters.add_filter(filter_type, **kwargs)
+        self.__filtered_data = None
+        timestamps = self['timestamps']
+        values = self['values']
 
     def append(self, timestamp, value):
         """
@@ -66,10 +79,22 @@ class dataset_container:
         Return list of timestamps when called with 'timestamps' or 0, and 
         list of values when called with 'values' or 1.
         """
+        from numpy import array
+        if self.__filtered_data is None:
+            timestamps, values = [], []
+            for point in self.datapoints:
+                timestamps.append(point.timestamp)
+                values.append(point.value)
+            timestamps, values = self.__filters(array(timestamps), 
+                                                array(values))
+            self.__filtered_data = {'timestamps': timestamps, 'values': values}
+        else:
+            timestamps = self.__filtered_data['timestamps']
+            values = self.__filtered_data['values']
         if item == 'timestamps' or item == 0:
-            return [point.timestamp for point in self.datapoints]
+            return timestamps
         elif item == 'values' or item == 1:
-            return [point.value for point in self.datapoints]
+            return values
         else:
             raise IndexError('Invalid index')
     
@@ -191,11 +216,25 @@ class dataset_container:
         from numpy import sum
         return self.__downsample_data(sum)
     
+    def downsample_none(self):
+        """
+        Don't downsample, just return full-resolution data as saved in the 
+        dataset.
+        """
+        from numpy import array
+        from plotting import line_plotter
+        res_timestamps = self['timestamps'] 
+        res_values = self['values']
+        return line_plotter(self.type, array(res_timestamps), array(res_values))
+    
     def __timeslice_data(self, timestamp_start, timestamp_end):
-        #Helper function to perform the actual time slicing common to
-        #downsample_mean and downsample_median
+        """
+        Helper function to perform the actual time slicing common to
+        downsampling.
+        """
         from numpy import array, column_stack
-        timestamps, values = array(self['timestamps']), array(self['values'])
+        timestamps = array(self['timestamps']) 
+        values = array(self['values'])
         mask = (timestamps >= timestamp_start)*(timestamps < timestamp_end)
         res = dataset_container(self.type)
         res.time_resolution(value=self.time_resolution())
