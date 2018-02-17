@@ -1,3 +1,5 @@
 eclipse.preferences.version=1
 encoding/dataset_container.py=utf-8
+encoding/device_db_mapping.py=utf-8
+encoding/filter_provider.py=utf-8
 encoding/gb_database.py=utf-8
