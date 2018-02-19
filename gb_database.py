@@ -54,10 +54,6 @@ class gb_database:
         self.tables = [x[0] for x in self.results.all()]
         self.device = device
         self.__db_names = device_db_mapping[self.device]
-        print type(device_db_mapping)
-        print type(device_db_mapping[self.device])
-        print type(self.__db_names)
-        print type(self.__db_names.keys())
         
     def __del__(self):
         self.__cursor.close()
@@ -89,20 +85,6 @@ class gb_database:
             return res
         else:
             return None
-        
-    def dump_tableinfo(self):
-        """
-        Print info on all the tables in the database.
-        """
-        for table in self.tables:
-            tab_info = self.query_tableinfo(table)
-            print table
-            print '-'*10
-            for index, name, datatype in zip(tab_info['index'], 
-                                             tab_info['name'], 
-                                             tab_info['type']):
-                print index, name, ':', datatype
-            print
 
     def __build_querystring(self, dataset):
         """
@@ -166,6 +148,7 @@ if __name__ == '__main__':
     time_resolution = timedelta(days=1)
     db = gb_database(argv[1], 'MI Band')
     heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
+    heartrate.add_filter('heartrate')
     steps = db.retrieve_dataset('steps', time_resolution=time_resolution)
     fig = plt.figure()
     gs = gridspec.GridSpec(2,1,height_ratios=[4,1])
@@ -174,5 +157,5 @@ if __name__ == '__main__':
     plt.xticks([])
     plt.subplot(gs[1])
     plt.subplots_adjust(hspace=0)
-    steps.downsample_sum().plot()
+    steps.downsample_none().plot()
     plt.savefig(argv[2])
