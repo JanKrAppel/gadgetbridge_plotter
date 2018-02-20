@@ -197,10 +197,11 @@ class dataset_container:
         dataset.
         """
         from numpy import array
-        from plotting import line_plotter
+        from plotting import plotter
         res_timestamps = self['timestamps'] 
         res_values = self['values']
-        return line_plotter(self._type, array(res_timestamps), array(res_values))
+        return plotter(self._type, timestamps=array(res_timestamps), 
+                       values=array(res_values))
     
     def _timeslice_data(self, timestamp_start, timestamp_end):
         """
