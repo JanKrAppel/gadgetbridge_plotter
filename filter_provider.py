@@ -1,7 +1,58 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class filter_provider:
+class acceptance_tester:
+    """
+    Tests data points for acceptance into dataset_container
+    """
+
+    def __init__(self, tester_type):
+        """
+        Initialize with the type of data to test.
+        """
+        self._tester_map = {'heartrate': self._test_heartrate,
+                            'intensity': self._test_intensity,
+                            'steps': self._test_steps}
+        self._tester = self._tester_map.get(tester_type, self._test_accept_all)
+    
+    def __call__(self, datapoint):
+        """
+        Pass a datapoint to test, returns acceptance based on the type set.
+        """
+        return self._tester(datapoint)
+        
+    def _test_accept_all(self, datapoint):
+        """
+        Accept all datapoints.
+        """
+        return True
+    
+    def _test_heartrate(self, datapoint):
+        """
+        Test HR datapoints for acceptance. Do not accept values that match the 
+        following:
+            - HR == 255
+            - HR <= 0
+        """
+        return not datapoint.value == 255 and not datapoint.value <= 0
+        
+    def _test_intensity(self, datapoint):
+        """
+        Test intensity datapoints for acceptance. Do not accept values that 
+        match the following:
+            - intensity == 255
+        """
+        return not datapoint.value == 255
+
+    def _test_steps(self, datapoint):
+        """
+        Test step datapoints for acceptance. Do not accept values that match 
+        the following:
+            - steps < 0
+        """
+        return not datapoint.value < 0
+
+class dataset_filter:
     """
     A class providing dataset filtering. 
     """
@@ -10,28 +61,28 @@ class filter_provider:
         """
         initialize the filters.
         """
+        self._filter_map = {'heartrate': self._filter_hr}
         self._filter_params = {}
         self._filters = []
-        self._filter_map = {'heartrate': self._filter_hr}
         
-    def add_filter(self, filter, **kwargs):
+    def add_filter(self, filtername, **kwargs):
         """
         Add a filter to be applied to the dataset. The first parameter selects
         the filter type, any other parameters must be named and will be stored
         and passed to the filter function as parameters.
         """
-        if filter in self._filter_map and not filter in self._filters:
-            self._filters.append(filter)
-            self._filter_params[filter] = kwargs
+        if filtername in self._filter_map and not filtername in self._filters:
+            self._filters.append(filtername)
+            self._filter_params[filtername] = kwargs
     
     def __call__(self, timestamps, values):
         """
         Apply the filters that have been set up for this provider to the dataset
         passed and return the resulting dataset.
         """
-        for filter in self._filters:
-            timestamps, values = self._filter_map[filter](timestamps, values, 
-                                                          **self._filter_params[filter])
+        for filtername in self._filters:
+            timestamps, values = self._filter_map[filtername](timestamps, values, 
+                                                              **self._filter_params[filtername])
         return timestamps, values
     
     def filters_count(self):

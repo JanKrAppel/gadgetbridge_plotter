@@ -10,19 +10,20 @@ class dataset_container:
     
     def __init__(self, dataset_type, **kwargs):
         """
-        Initialize the dataset with the type. Type selects processing for 
+        Initialize the dataset with the _type. Type selects processing for 
         valid data when appending points.
         """
         from datetime import timedelta
-        from filter_provider import filter_provider
-        self.type = dataset_type
-        self.datapoints = []
+        from filter_provider import dataset_filter, acceptance_tester
+        self._type = dataset_type
+        self._datapoints = []
         self._index = 0
         if 'time_resolution' in kwargs:
             self._time_resolution = kwargs['time_resolution']
         else:
             self._time_resolution = timedelta(minutes=1)
-        self._filters = filter_provider()
+        self._accept = acceptance_tester(self._type)
+        self._filters = dataset_filter()
         self._filtered_data = None
         
     def add_filter(self, filter_type, **kwargs):
@@ -33,46 +34,19 @@ class dataset_container:
         """
         self._filters.add_filter(filter_type, **kwargs)
         self._filtered_data = None
+        #This is done to update self._filtered_data:
         timestamps = self['timestamps']
         values = self['values']
 
     def append(self, timestamp, value):
         """
         Append a datapoint(timestamp, value) to the dataset. Depending on the
-        type, checks for validity are performed, and if invalid, the data point
+        _type, checks for validity are performed, and if invalid, the data point
         may be rejected.
         """
-        self._postprocess_datapoint(datapoint(timestamp, value))
-
-    def _postprocess_datapoint(self, datapoint):
-        """
-        Call appropriate postprocessing function for the datapoint.
-        """
-        if self.type == 'heartrate':
-            return self._postprocess_hr(datapoint)
-        elif self.type == 'intensity':
-            return self._postprocess_intensity(datapoint)
-        else:
-            self.datapoints.append(datapoint)
-        
-    def _postprocess_hr(self, datapoint):
-        """
-        Postprocess HR datapoints. Do not append values that match the 
-        following:
-            - HR == 255
-            - HR <= 0
-        """
-        if not (datapoint.value == 255) + (datapoint.value <= 0):
-            self.datapoints.append(datapoint)
-        
-    def _postprocess_intensity(self, datapoint):
-        """
-        Postprocess intensity datapoints. Do not append values that match the 
-        following:
-            - intensity == 255
-        """
-        if not (datapoint.value == 255):
-            self.datapoints.append(datapoint)
+        dp = datapoint(timestamp, value)
+        if self._accept(dp):
+            self._datapoints.append(dp)
 
     def __getitem__(self, item):
         """
@@ -82,7 +56,7 @@ class dataset_container:
         from numpy import array
         if self._filtered_data is None:
             timestamps, values = [], []
-            for point in self.datapoints:
+            for point in self._datapoints:
                 timestamps.append(point.timestamp)
                 values.append(point.value)
             timestamps, values = self._filters(array(timestamps), 
@@ -108,9 +82,9 @@ class dataset_container:
         """
         Iterate to the next datapoint in the list.
         """
-        if self._index < len(self.datapoints):
+        if self._index < len(self._datapoints):
             self._index += 1
-            return self.datapoints[self._index - 1]
+            return self._datapoints[self._index - 1]
         else:
             self._index = 0
             raise StopIteration
@@ -167,7 +141,7 @@ class dataset_container:
             res_timestamps.append(cur_time)
             res_values.append(val)
             cur_time += self.time_resolution()
-        return plotter(self.type, timestamps=array(res_timestamps), 
+        return plotter(self._type, timestamps=array(res_timestamps), 
                        values=array(res_values))
     
     def downsample_mean(self):
@@ -207,7 +181,7 @@ class dataset_container:
             res_histogram.append(hist)
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
-        return plotter(self.type, timestamps=array(res_timestamps), bins=bins, 
+        return plotter(self._type, timestamps=array(res_timestamps), bins=bins, 
                        histogram=array(res_histogram))
 
     def downsample_sum(self):
@@ -226,7 +200,7 @@ class dataset_container:
         from plotting import line_plotter
         res_timestamps = self['timestamps'] 
         res_values = self['values']
-        return line_plotter(self.type, array(res_timestamps), array(res_values))
+        return line_plotter(self._type, array(res_timestamps), array(res_values))
     
     def _timeslice_data(self, timestamp_start, timestamp_end):
         """
@@ -237,7 +211,7 @@ class dataset_container:
         timestamps = array(self['timestamps']) 
         values = array(self['values'])
         mask = (timestamps >= timestamp_start)*(timestamps < timestamp_end)
-        res = dataset_container(self.type)
+        res = dataset_container(self._type)
         res.time_resolution(value=self.time_resolution())
         for timestamp, value in column_stack((timestamps[mask], values[mask])):
             res.append(timestamp, value)
