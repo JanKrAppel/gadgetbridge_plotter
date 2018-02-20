@@ -156,7 +156,7 @@ class dataset_container:
         number. 
         """
         from numpy import array
-        from plotting import line_plotter
+        from plotting import plotter
         cur_time = self.timestamp_start()
         res_timestamps = []
         res_values = []
@@ -167,7 +167,8 @@ class dataset_container:
             res_timestamps.append(cur_time)
             res_values.append(val)
             cur_time += self.time_resolution()
-        return line_plotter(self.type, array(res_timestamps), array(res_values))
+        return plotter(self.type, timestamps=array(res_timestamps), 
+                       values=array(res_values))
     
     def downsample_mean(self):
         """
@@ -186,7 +187,7 @@ class dataset_container:
     def downsample_histogram(self, hist_min=None, hist_max=None, 
                              resolution=5):
         from numpy import array, arange, amin, amax, histogram
-        from plotting import hist_plotter
+        from plotting import plotter
         if hist_min is None:
             #Take the minimum, round to nearest 10
             hist_min = int(amin(self['values'])/10)*10
@@ -206,8 +207,8 @@ class dataset_container:
             res_histogram.append(hist)
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
-        return hist_plotter(self.type, array(res_timestamps), bins, 
-                            array(res_histogram))
+        return plotter(self.type, timestamps=array(res_timestamps), bins=bins, 
+                       histogram=array(res_histogram))
 
     def downsample_sum(self):
         """

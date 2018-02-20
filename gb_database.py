@@ -157,5 +157,5 @@ if __name__ == '__main__':
     plt.xticks([])
     plt.subplot(gs[1])
     plt.subplots_adjust(hspace=0)
-    steps.downsample_none().plot()
+    steps.downsample_sum().plot()
     plt.savefig(argv[2])
