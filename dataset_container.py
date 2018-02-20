@@ -17,13 +17,13 @@ class dataset_container:
         from filter_provider import filter_provider
         self.type = dataset_type
         self.datapoints = []
-        self.__index = 0
+        self._index = 0
         if 'time_resolution' in kwargs:
-            self.__time_resolution = kwargs['time_resolution']
+            self._time_resolution = kwargs['time_resolution']
         else:
-            self.__time_resolution = timedelta(minutes=1)
-        self.__filters = filter_provider()
-        self.__filtered_data = None
+            self._time_resolution = timedelta(minutes=1)
+        self._filters = filter_provider()
+        self._filtered_data = None
         
     def add_filter(self, filter_type, **kwargs):
         """
@@ -31,8 +31,8 @@ class dataset_container:
         that will be applied, any other parameter must be named and will be 
         passed to the actual filter function.
         """
-        self.__filters.add_filter(filter_type, **kwargs)
-        self.__filtered_data = None
+        self._filters.add_filter(filter_type, **kwargs)
+        self._filtered_data = None
         timestamps = self['timestamps']
         values = self['values']
 
@@ -42,20 +42,20 @@ class dataset_container:
         type, checks for validity are performed, and if invalid, the data point
         may be rejected.
         """
-        self.__postprocess_datapoint(datapoint(timestamp, value))
+        self._postprocess_datapoint(datapoint(timestamp, value))
 
-    def __postprocess_datapoint(self, datapoint):
+    def _postprocess_datapoint(self, datapoint):
         """
         Call appropriate postprocessing function for the datapoint.
         """
         if self.type == 'heartrate':
-            return self.__postprocess_hr(datapoint)
+            return self._postprocess_hr(datapoint)
         elif self.type == 'intensity':
-            return self.__postprocess_intensity(datapoint)
+            return self._postprocess_intensity(datapoint)
         else:
             self.datapoints.append(datapoint)
         
-    def __postprocess_hr(self, datapoint):
+    def _postprocess_hr(self, datapoint):
         """
         Postprocess HR datapoints. Do not append values that match the 
         following:
@@ -65,7 +65,7 @@ class dataset_container:
         if not (datapoint.value == 255) + (datapoint.value <= 0):
             self.datapoints.append(datapoint)
         
-    def __postprocess_intensity(self, datapoint):
+    def _postprocess_intensity(self, datapoint):
         """
         Postprocess intensity datapoints. Do not append values that match the 
         following:
@@ -80,17 +80,17 @@ class dataset_container:
         list of values when called with 'values' or 1.
         """
         from numpy import array
-        if self.__filtered_data is None:
+        if self._filtered_data is None:
             timestamps, values = [], []
             for point in self.datapoints:
                 timestamps.append(point.timestamp)
                 values.append(point.value)
-            timestamps, values = self.__filters(array(timestamps), 
+            timestamps, values = self._filters(array(timestamps), 
                                                 array(values))
-            self.__filtered_data = {'timestamps': timestamps, 'values': values}
+            self._filtered_data = {'timestamps': timestamps, 'values': values}
         else:
-            timestamps = self.__filtered_data['timestamps']
-            values = self.__filtered_data['values']
+            timestamps = self._filtered_data['timestamps']
+            values = self._filtered_data['values']
         if item == 'timestamps' or item == 0:
             return timestamps
         elif item == 'values' or item == 1:
@@ -108,11 +108,11 @@ class dataset_container:
         """
         Iterate to the next datapoint in the list.
         """
-        if self.__index < len(self.datapoints):
-            self.__index += 1
-            return self.datapoints[self.__index - 1]
+        if self._index < len(self.datapoints):
+            self._index += 1
+            return self.datapoints[self._index - 1]
         else:
-            self.__index = 0
+            self._index = 0
             raise StopIteration
     
     def time_resolution(self, value = None):
@@ -127,9 +127,9 @@ class dataset_container:
             if value < timedelta(minutes=1):
                 raise ValueError('Time resolution cannot be lower than 1 min.')
             else:
-                self.__time_resolution = value
+                self._time_resolution = value
         else:
-            return self.__time_resolution
+            return self._time_resolution
     
     def timestamp_start(self):
         """
@@ -149,7 +149,7 @@ class dataset_container:
         """
         return [self.timestamp_start(), self.timestamp_end()]
     
-    def __downsample_data(self, func):
+    def _downsample_data(self, func):
         """
         Arbitrary downsample function. Pass a callable that performs the actual
         downsampling. func should accept an array of values and return a single
@@ -161,7 +161,7 @@ class dataset_container:
         res_timestamps = []
         res_values = []
         while(cur_time <= self.timestamp_end()):
-            sliced_data = self.__timeslice_data(cur_time, cur_time + 
+            sliced_data = self._timeslice_data(cur_time, cur_time + 
                                                 self.time_resolution())
             val = func(sliced_data['values'])
             res_timestamps.append(cur_time)
@@ -175,14 +175,14 @@ class dataset_container:
         Downsample data using the Numpy mean function.
         """
         from numpy import mean
-        return self.__downsample_data(mean)
+        return self._downsample_data(mean)
     
     def downsample_median(self):
         """
         Downsample data using the Numpy median function.
         """
         from numpy import median
-        return self.__downsample_data(median)
+        return self._downsample_data(median)
     
     def downsample_histogram(self, hist_min=None, hist_max=None, 
                              resolution=5):
@@ -199,7 +199,7 @@ class dataset_container:
         res_timestamps = []
         res_histogram = []
         while(cur_time <= self.timestamp_end()):
-            sliced_data = self.__timeslice_data(cur_time, cur_time + 
+            sliced_data = self._timeslice_data(cur_time, cur_time + 
                                                 self.time_resolution())
         
             hist = histogram(sliced_data['values'], bins, density=True)[0]
@@ -215,7 +215,7 @@ class dataset_container:
         Downsample data using the Numpy sum function.
         """
         from numpy import sum
-        return self.__downsample_data(sum)
+        return self._downsample_data(sum)
     
     def downsample_none(self):
         """
@@ -228,7 +228,7 @@ class dataset_container:
         res_values = self['values']
         return line_plotter(self.type, array(res_timestamps), array(res_values))
     
-    def __timeslice_data(self, timestamp_start, timestamp_end):
+    def _timeslice_data(self, timestamp_start, timestamp_end):
         """
         Helper function to perform the actual time slicing common to
         downsampling.
@@ -256,7 +256,7 @@ class datapoint:
         """
         self.timestamp = timestamp
         self.value = value
-        self.__index = 0
+        self._index = 0
         
     def __iter__(self):
         """
@@ -269,13 +269,13 @@ class datapoint:
         Iterate over the values. First iteration yields timestamp, second
         iteration yields value.
         """
-        if self.__index == 0:
-            self.__index += 1
+        if self._index == 0:
+            self._index += 1
             return self.timestamp
-        elif self.__index == 1:
-            self.__index += 1
+        elif self._index == 1:
+            self._index += 1
             return self.value
         else:
-            self.__index = 0
+            self._index = 0
             raise StopIteration
         

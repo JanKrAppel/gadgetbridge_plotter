@@ -10,7 +10,7 @@ class result_iterator:
         """
         Initialize the interface with a cursor.
         """
-        self.__cursor = cursor
+        self._cursor = cursor
 
     def __iter__(self):
         """
@@ -22,7 +22,7 @@ class result_iterator:
         """
         Iterate over the cursor result items.
         """
-        item = self.__cursor.fetchone()
+        item = self._cursor.fetchone()
         if not item is None:
             return item
         else:
@@ -32,7 +32,7 @@ class result_iterator:
         """
         Convenience function to return all result items at once.
         """
-        return self.__cursor.fetchall()
+        return self._cursor.fetchall()
 
 class gb_database:
     """
@@ -46,24 +46,24 @@ class gb_database:
         """
         import sqlite3
         from device_db_mapping import device_db_mapping
-        self.__db_filename = filename
-        self.__db = sqlite3.connect(self.__db_filename)
-        self.__cursor = self.__db.cursor()
-        self.results = result_iterator(self.__cursor)
-        self.__query('SELECT name FROM sqlite_master WHERE type="table";')
+        self._db_filename = filename
+        self._db = sqlite3.connect(self._db_filename)
+        self._cursor = self._db.cursor()
+        self.results = result_iterator(self._cursor)
+        self._query('SELECT name FROM sqlite_master WHERE type="table";')
         self.tables = [x[0] for x in self.results.all()]
         self.device = device
-        self.__db_names = device_db_mapping[self.device]
+        self._db_names = device_db_mapping[self.device]
         
     def __del__(self):
-        self.__cursor.close()
-        self.__db.close()
+        self._cursor.close()
+        self._db.close()
         
-    def __query(self, querystring):
+    def _query(self, querystring):
         """
         Execute a query on the database.
         """
-        self.__cursor.execute(querystring)
+        self._cursor.execute(querystring)
         
     def query_tableinfo(self, table_name):
         """
@@ -86,7 +86,7 @@ class gb_database:
         else:
             return None
 
-    def __build_querystring(self, dataset):
+    def _build_querystring(self, dataset):
         """
         Build a Sqlite query to pull the dataset from the database.
         Dataset must be one of the following:
@@ -97,9 +97,9 @@ class gb_database:
             - steps
         """
         query_template = 'SELECT {dataset_col:s} FROM {table:s};'
-        return query_template.format(dataset_col=self.__db_names['timestamp'] + \
-                                         ', ' + self.__db_names[dataset],
-                                     table=self.__db_names['table'])
+        return query_template.format(dataset_col=self._db_names['timestamp'] + \
+                                         ', ' + self._db_names[dataset],
+                                     table=self._db_names['table'])
         
     def query_dataset(self, dataset):
         """
@@ -111,13 +111,13 @@ class gb_database:
             - activity
             - steps
         """
-        datasets = self.__db_names.keys()
+        datasets = self._db_names.keys()
         datasets.remove('table')
         datasets.remove('timestamp')
         if not dataset in datasets:
             raise LookupError('Dataset not available, must be in ' + \
                               str(datasets))
-        self.__query(self.__build_querystring(dataset))
+        self._query(self._build_querystring(dataset))
         
     def retrieve_dataset(self, dataset, **kwargs):
         """
