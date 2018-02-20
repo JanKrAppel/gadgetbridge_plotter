@@ -10,8 +10,9 @@ class filter_provider:
         """
         initialize the filters.
         """
-        self.__filters = {}
-        self.__allowed_filters = ['heartrate']
+        self._filter_params = {}
+        self._filters = []
+        self._filter_map = {'heartrate': self._filter_hr}
         
     def add_filter(self, filter, **kwargs):
         """
@@ -19,27 +20,27 @@ class filter_provider:
         the filter type, any other parameters must be named and will be stored
         and passed to the filter function as parameters.
         """
-        if filter in self.__allowed_filters and not filter in self.__filters:
-            self.__filters[filter] = kwargs
+        if filter in self._filter_map and not filter in self._filters:
+            self._filters.append(filter)
+            self._filter_params[filter] = kwargs
     
     def __call__(self, timestamps, values):
         """
         Apply the filters that have been set up for this provider to the dataset
         passed and return the resulting dataset.
         """
-        for filter in self.__filters:
-            if filter == 'heartrate':
-                timestamps, values = self.__filter_hr(timestamps, values, 
-                                                      **self.__filters[filter])
+        for filter in self._filters:
+            timestamps, values = self._filter_map[filter](timestamps, values, 
+                                                          **self._filter_params[filter])
         return timestamps, values
     
     def filters_count(self):
         """
         Returns the number of filter functions applied to data
         """
-        return len(self.__filters)
+        return len(self._filters)
     
-    def __filter_hr(self, timestamps, values, delta_doublefilter=5, **kwargs):
+    def _filter_hr(self, timestamps, values, delta_doublefilter=5, **kwargs):
         """
         A heartrate-specific filter. It checks if a value is twice as high as
         the ones preceding and following it, within the delta_doublefilter 
