@@ -85,13 +85,13 @@ class dataset_filter:
                                                               **self._filter_params[filtername])
         return timestamps, values
     
-    def filters_count(self):
+    def count(self):
         """
         Returns the number of filter functions applied to data
         """
         return len(self._filters)
     
-    def _filter_hr(self, timestamps, values, delta_doublefilter=5, **kwargs):
+    def _filter_hr(self, timestamps, values, delta_doublefilter=3, **kwargs):
         """
         A heartrate-specific filter. It checks if a value is twice as high as
         the ones preceding and following it, within the delta_doublefilter 
@@ -99,10 +99,10 @@ class dataset_filter:
         """
         from numpy import arange
         for i in arange(1, len(values) - 1):
-            diff_lower = abs((values[i]/2.) - values[i - 1])
-            diff_upper = abs((values[i]/2.) - values[i + 1])
+            diff_lower = abs((float(values[i])/2.) - values[i - 1])
+            diff_upper = abs((float(values[i])/2.) - values[i + 1])
             if (diff_lower < delta_doublefilter)*\
-                (diff_upper < delta_doublefilter):
+              (diff_upper < delta_doublefilter):
                 values[i] /= 2.
         return timestamps, values
         
