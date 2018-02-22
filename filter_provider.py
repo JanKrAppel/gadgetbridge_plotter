@@ -34,7 +34,7 @@ class acceptance_tester:
             - HR == 255
             - HR <= 0
         """
-        return not datapoint.value == 255 and not datapoint.value <= 0
+        return not datapoint.value >= 255 and not datapoint.value <= 0
         
     def _test_intensity(self, datapoint):
         """
@@ -42,7 +42,7 @@ class acceptance_tester:
         match the following:
             - intensity == 255
         """
-        return not datapoint.value == 255
+        return not datapoint.value >= 255
 
     def _test_steps(self, datapoint):
         """
