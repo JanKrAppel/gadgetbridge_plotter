@@ -1,3 +1,8 @@
 .directory
 *.pyc
 *.png
+.coverage
+.cache
+.project
+.pydevproject
+.settings/*
