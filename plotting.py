@@ -43,8 +43,8 @@ class Plotter:
             self._bins = kwargs['bins']
             self._histogram = kwargs['histogram']
         else:
-            raise InvalidArgumentsError('Invalid naming and/or number of ' + \
-                                        'arguments')
+            raise InvalidArgumentsException('Invalid naming and/or number '\
+                                            + 'of arguments')
     
     def plot(self):
         """Plot the data stored in the class as the appropriate plot type.
@@ -90,6 +90,6 @@ class Plotter:
         plt.xlim(amin(self._timestamps), amax(self._timestamps))
         plt.ylabel(self._type + ' histogram')
                 
-class InvalidArgumentsError(BaseException):
+class InvalidArgumentsException(BaseException):
     """The error raised when an invalid argument is passed."""
     pass
