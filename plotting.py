@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class plotter:
+class Plotter:
     """A class that creates plots from data."""
     
     def __init__(self, dataset_name, **kwargs):

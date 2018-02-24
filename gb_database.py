@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class result_iterator:
+class ResultIterator:
     """A class used to iterate over sqlite3 cursor results in a for loop."""
     
     def __init__(self, cursor):
@@ -27,7 +27,7 @@ class result_iterator:
         
         Returns
         -------
-            self : result_iterator
+            self : ResultIterator
                 This instance
         """
         return self
@@ -64,7 +64,7 @@ class result_iterator:
         """
         return self._cursor.fetchall()
 
-class gb_database:
+class GadgetbridgeDatabase:
     """Provides a simple abstraction layer around the Sqlite DB."""
     
     def __init__(self, filename, device):
@@ -88,7 +88,7 @@ class gb_database:
         self._db_filename = filename
         self._db = sqlite3.connect(self._db_filename)
         self._cursor = self._db.cursor()
-        self.results = result_iterator(self._cursor)
+        self.results = ResultIterator(self._cursor)
         self._query('SELECT name FROM sqlite_master WHERE type="table";')
         self.tables = [x[0] for x in self.results.all()]
         self.device = device
@@ -216,17 +216,17 @@ class gb_database:
                 * steps
             kwargs : dict
                 Any other named parameters will be passed to the 
-                dataset_container instance returned.
+                DatasetContainer instance returned.
         
         Returns
         -------
-            res : dataset_container
+            res : DatasetContainer
                 The container with the retrieved dataset.
         """
         from datetime import datetime
-        from dataset_container import dataset_container
+        from dataset_container import DatasetContainer
         self.query_dataset(dataset)
-        res = dataset_container(dataset, **kwargs)
+        res = DatasetContainer(dataset, **kwargs)
         for ts, val in self.results:
             res.append(datetime.fromtimestamp(ts), val)
         return res
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     from sys import argv
     from matplotlib import gridspec, pyplot as plt
     time_resolution = timedelta(days=1)
-    db = gb_database(argv[1], 'MI Band')
+    db = GadgetbridgeDatabase(argv[1], 'MI Band')
     heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
     heartrate.add_filter('heartrate')
     steps = db.retrieve_dataset('steps', time_resolution=time_resolution)

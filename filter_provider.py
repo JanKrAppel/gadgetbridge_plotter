@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class acceptance_tester:
+class AcceptanceTester:
     """Tests data points for acceptance into dataset_container."""
 
     def __init__(self, tester_type):
@@ -21,28 +21,28 @@ class acceptance_tester:
                             'steps': self._test_steps}
         self._tester = self._tester_map.get(tester_type, self._test_accept_all)
     
-    def __call__(self, datapoint):
-        """Pass a datapoint to test, returns acceptance based on the type set.
+    def __call__(self, Datapoint):
+        """Pass a Datapoint to test, returns acceptance based on the type set.
         
         Parameters
         ----------
-            datapoint : datapoint
-                The datapoint to test for acceptance
+            Datapoint : Datapoint
+                The Datapoint to test for acceptance
         
         Returns
         -------
             bool
                 Whether or not the value is valid.
         """
-        return self._tester(datapoint)
+        return self._tester(Datapoint)
         
-    def _test_accept_all(self, datapoint):
+    def _test_accept_all(self, Datapoint):
         """Accept all datapoints.
         
         Parameters
         ----------
-            datapoint : datapoint
-                The datapoint being tested.
+            Datapoint : Datapoint
+                The Datapoint being tested.
         
         Returns
         -------
@@ -51,7 +51,7 @@ class acceptance_tester:
         """
         return True
     
-    def _test_heartrate(self, datapoint):
+    def _test_heartrate(self, Datapoint):
         """Test HR datapoints for acceptance. Do not accept values that match 
         the following:
             * HR == 255
@@ -59,51 +59,51 @@ class acceptance_tester:
         
         Parameters
         ----------
-            datapoint : datapoint
-                The datapoint to test for acceptance
+            Datapoint : Datapoint
+                The Datapoint to test for acceptance
         
         Returns
         -------
             bool
                 Whether or not the value is valid.
         """
-        return not datapoint.value >= 255 and not datapoint.value <= 0
+        return not Datapoint.value >= 255 and not Datapoint.value <= 0
         
-    def _test_intensity(self, datapoint):
+    def _test_intensity(self, Datapoint):
         """Test intensity datapoints for acceptance. Do not accept values that 
         match the following:
             * intensity == 255
         
         Parameters
         ----------
-            datapoint : datapoint
-                The datapoint to test for acceptance
+            Datapoint : Datapoint
+                The Datapoint to test for acceptance
         
         Returns
         -------
             bool
                 Whether or not the value is valid.
         """
-        return not datapoint.value >= 255
+        return not Datapoint.value >= 255
 
-    def _test_steps(self, datapoint):
+    def _test_steps(self, Datapoint):
         """Test step datapoints for acceptance. Do not accept values that match 
         the following:
             * steps < 0
         
         Parameters
         ----------
-            datapoint : datapoint
-                The datapoint to test for acceptance
+            Datapoint : Datapoint
+                The Datapoint to test for acceptance
         
         Returns
         -------
             bool
                 Whether or not the value is valid.
         """
-        return not datapoint.value < 0
+        return not Datapoint.value < 0
 
-class dataset_filter:
+class DatasetFilter:
     """A class providing dataset filtering."""
     
     def __init__(self):

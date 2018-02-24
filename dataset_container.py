@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class dataset_container:
-    """Contains one single dataset. Holds a list of datapoint instances 
+class DatasetContainer:
+    """Contains one single dataset. Holds a list of Datapoint instances 
     describing the actual data. Depending on the name the dataset was 
     initialized with, processing is performed to reject invalid data when 
     appending new points."""
@@ -21,7 +21,7 @@ class dataset_container:
             None
         """
         from datetime import timedelta
-        from filter_provider import dataset_filter, acceptance_tester
+        from filter_provider import DatasetFilter, AcceptanceTester
         self._type = dataset_type
         self._datapoints = []
         self._index = 0
@@ -29,15 +29,15 @@ class dataset_container:
             self._time_resolution = kwargs['time_resolution']
         else:
             self._time_resolution = timedelta(minutes=1)
-        self._accept = acceptance_tester(self._type)
-        self._filters = dataset_filter()
+        self._accept = AcceptanceTester(self._type)
+        self._filters = DatasetFilter()
         self._filtered_data = None
         
     def add_filter(self, filter_type, **kwargs):
         """Add a new filter to the filter provider. filter_type selects the 
         filter that will be applied, any other parameter must be named and will
         be passed to the actual filter function. When adding a filter, the 
-        cached dataset_container._filtered_data is updated.
+        cached DatasetContainer._filtered_data is updated.
         
         Parameters
         ----------
@@ -58,14 +58,14 @@ class dataset_container:
         values = self['values']
 
     def append(self, timestamp, value):
-        """Append a datapoint(timestamp, value) to the dataset. Depending on the
+        """Append a Datapoint(timestamp, value) to the dataset. Depending on the
         type, checks for validity are performed, and if invalid, the data point
         may be rejected.
         
         Parameters
         ----------
             timestamp : datetime
-                The timestamp of the datapoint
+                The timestamp of the Datapoint
             value : int, float
                 The value to store
         
@@ -73,7 +73,7 @@ class dataset_container:
         -------
             None
         """
-        dp = datapoint(timestamp, value)
+        dp = Datapoint(timestamp, value)
         if self._accept(dp):
             self._datapoints.append(dp)
 
@@ -121,12 +121,12 @@ class dataset_container:
         
         Returns
         -------
-            self : dataset_container
+            self : DatasetContainer
         """
         return self
     
     def next(self):
-        """Iterate to the next datapoint in the list.
+        """Iterate to the next Datapoint in the list.
         
         Parameters
         ----------
@@ -134,8 +134,8 @@ class dataset_container:
         
         Returns
         -------
-            datapoint
-                The next datapoint in the container
+            Datapoint
+                The next Datapoint in the container
         """
         if self._index < len(self._datapoints):
             self._index += 1
@@ -227,11 +227,11 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import array
-        from plotting import plotter
+        from plotting import Plotter
         cur_time = self.timestamp_start()
         res_timestamps = []
         res_values = []
@@ -242,7 +242,7 @@ class dataset_container:
             res_timestamps.append(cur_time)
             res_values.append(val)
             cur_time += self.time_resolution()
-        return plotter(self._type, timestamps=array(res_timestamps), 
+        return Plotter(self._type, timestamps=array(res_timestamps), 
                        values=array(res_values))
     
     def downsample_mean(self):
@@ -254,8 +254,8 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import mean
         return self._downsample_data(mean)
@@ -269,8 +269,8 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import median
         return self._downsample_data(median)
@@ -298,11 +298,11 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import array, arange, amin, amax, histogram
-        from plotting import plotter
+        from plotting import Plotter
         if hist_min is None:
             #Take the minimum, round to nearest 10
             hist_min = int(amin(self['values'])/10)*10
@@ -322,7 +322,7 @@ class dataset_container:
             res_histogram.append(hist)
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
-        return plotter(self._type, timestamps=array(res_timestamps), bins=bins, 
+        return Plotter(self._type, timestamps=array(res_timestamps), bins=bins, 
                        histogram=array(res_histogram))
 
     def downsample_sum(self):
@@ -334,8 +334,8 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import sum
         return self._downsample_data(sum)
@@ -350,19 +350,19 @@ class dataset_container:
         
         Returns
         -------
-            plotting.plotter
-                A plotter object that plots the downsampled data.
+            plotting.Plotter
+                A Plotter object that plots the downsampled data.
         """
         from numpy import array
-        from plotting import plotter
+        from plotting import Plotter
         res_timestamps = self['timestamps'] 
         res_values = self['values']
-        return plotter(self._type, timestamps=array(res_timestamps), 
+        return Plotter(self._type, timestamps=array(res_timestamps), 
                        values=array(res_values))
     
     def _timeslice_data(self, timestamp_start, timestamp_end):
         """Helper function to perform the actual time slicing common to
-        downsampling. Returns a dataset_container with the data for which
+        downsampling. Returns a DatasetContainer with the data for which
         timestamp_start <= timestamp < timestamp_end.
 
         Parameters
@@ -374,26 +374,26 @@ class dataset_container:
         
         Returns
         -------
-            res : dataset_container
+            res : DatasetContainer
                 A container with the data between the start and end values.
         """
         from numpy import array, column_stack
         timestamps = array(self['timestamps']) 
         values = array(self['values'])
         mask = (timestamps >= timestamp_start)*(timestamps < timestamp_end)
-        res = dataset_container(self._type)
+        res = DatasetContainer(self._type)
         res.time_resolution(value=self.time_resolution())
         for timestamp, value in column_stack((timestamps[mask], values[mask])):
             res.append(timestamp, value)
         return res
         
-class datapoint:
-    """Container for a single data point. Holds datapoint.timestamp and 
-    datapoint.value. Is iterable to allow for timestamp, value = datapoint 
+class Datapoint:
+    """Container for a single data point. Holds Datapoint.timestamp and 
+    Datapoint.value. Is iterable to allow for timestamp, value = Datapoint 
     assignments."""
     
     def __init__(self, timestamp, value):
-        """Initialize the datapoint. Pass a timestamp and a value to hold.
+        """Initialize the Datapoint. Pass a timestamp and a value to hold.
         
         Parameters
         ----------
@@ -415,8 +415,8 @@ class datapoint:
         
         Returns
         -------
-            self : datapoint
-                This instance of datapoint
+            self : Datapoint
+                This instance of Datapoint
         """
         return self
     

@@ -1,38 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from ..filter_provider import dataset_filter
+from ..filter_provider import DatasetFilter
 from numpy import array
 from datetime import datetime
 
 def test_addition():
-    """Test adding a valid filter to the dataset_filter class. The filter should
+    """Test adding a valid filter to the DatasetFilter class. The filter should
     get added.
     """
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('heartrate')
     assert len(ds_filter._filters) == 1 and ds_filter._filters[0] == 'heartrate'
 
 def test_invalid_addition():
-    """Test adding an invalid filter to the dataset_filter class. The filter 
+    """Test adding an invalid filter to the DatasetFilter class. The filter 
     should not be added.
     """
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('not defined as filter name')
     assert len(ds_filter._filters) == 0
 
 def test_double_addition():
-    """Test adding the same filter twice to the dataset_filter class. Expected
+    """Test adding the same filter twice to the DatasetFilter class. Expected
     behaviour is that the filter only gets added once.
     """
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('heartrate')
     ds_filter.add_filter('heartrate')
     assert len(ds_filter._filters) == 1
     
 def test_get_count():
-    """Test returning the number of filters from dataset_filter.get_count()."""
-    ds_filter = dataset_filter()
+    """Test returning the number of filters from DatasetFilter.get_count()."""
+    ds_filter = DatasetFilter()
     assert ds_filter.count() == 0
     assert ds_filter.count() == len(ds_filter._filters)
     ds_filter.add_filter('heartrate')
@@ -41,13 +41,13 @@ def test_get_count():
 
 def test_param_passing():
     """Test passing parameters to filters. The parameters should be stored 
-    correctly in the dataset_filter._filter_params dictionary.
+    correctly in the DatasetFilter._filter_params dictionary.
     """
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('heartrate')
     assert len(ds_filter._filter_params) == 1
     assert len(ds_filter._filter_params['heartrate'].keys()) == 0
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('heartrate', test_param=1)
     assert len(ds_filter._filter_params) == 1
     assert len(ds_filter._filter_params['heartrate'].keys()) == 1
@@ -55,7 +55,7 @@ def test_param_passing():
 
 def test_heartrate_filter():
     """Test the function of the heartrate filter."""
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     ds_filter.add_filter('heartrate')    
     test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
                         datetime(2018, 1, 1, 12, 1, 0), 
@@ -74,7 +74,7 @@ def test_heartrate_filter():
 
 def test_no_filter():
     """Test that no filter returns the dataset unmodified."""
-    ds_filter = dataset_filter()
+    ds_filter = DatasetFilter()
     test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
                         datetime(2018, 1, 1, 12, 1, 0), 
                         datetime(2018, 1, 1, 12, 2, 0), 
