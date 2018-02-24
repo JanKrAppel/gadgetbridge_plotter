@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-        from numpy import array, arange, amin, amax, histogram
-        from numpy import column_stack, median, mean, sum
-        from plotting import Plotter
-        from datetime import timedelta
-        from filter_provider import DatasetFilter, AcceptanceTester
+from numpy import array, arange, amin, amax, histogram
+from numpy import column_stack, median, mean, sum
+from plotting import Plotter
+from datetime import timedelta
+from filter_provider import DatasetFilter, AcceptanceTester
 
 class DatasetContainer:
     """Contains one single dataset. Holds a list of Datapoint instances 
@@ -12,14 +12,25 @@ class DatasetContainer:
     initialized with, processing is performed to reject invalid data when 
     appending new points."""
     
-    def __init__(self, dataset_type, **kwargs):
+    def __init__(self, dataset_type, time_resolution=timedelta(minutes=1),
+                 filter_provider=DatasetFilter, plotter=Plotter):
         """Initialize the dataset with the dataset_type. Type selects 
         processing for valid data when appending points.
         
         Parameters
         ----------
             dataset_type : string
-                The dataset type. 
+                The dataset type.
+            time_resolution : datetime.timedelta
+                The time resolution of the dataset.
+                (Default: timedelta(minutes=1))
+            filter_provider : class
+                A class providing data filters to the container. Must be 
+                callable to apply the filters, and expose an add_filter and 
+                count method.
+            plotter : class
+                A class providing plotting functionality. Must expose a plot 
+                method.
         
         Returns
         -------
@@ -28,12 +39,20 @@ class DatasetContainer:
         self._type = dataset_type
         self._datapoints = []
         self._index = 0
-        if 'time_resolution' in kwargs:
-            self._time_resolution = kwargs['time_resolution']
-        else:
-            self._time_resolution = timedelta(minutes=1)
+        self._time_resolution = time_resolution
         self._accept = AcceptanceTester(self._type)
-        self._filters = DatasetFilter()
+        if hasattr(filter_provider, 'add_filter') \
+            and hasattr(filter_provider, 'count') \
+            and callable(filter_provider.add_filter) \
+            and callable(filter_provider.count) \
+            and callable(filter_provider):
+            self._filters = filter_provider()
+        else:
+            raise ValueError('Got an invalid filter provider')
+        if hasattr(plotter, 'plot') and callable(plotter.plot):
+            self._plotter = plotter
+        else:
+            raise ValueError('Got an invalid plotter')
         self._filtered_data = None
         
     def add_filter(self, filter_type, **kwargs):
@@ -228,8 +247,8 @@ class DatasetContainer:
         
         Returns
         -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
+            class
+                A class that provides plotting of the data set.
         """
         cur_time = self.timestamp_start()
         res_timestamps = []
@@ -241,8 +260,8 @@ class DatasetContainer:
             res_timestamps.append(cur_time)
             res_values.append(val)
             cur_time += self.time_resolution()
-        return Plotter(self._type, timestamps=array(res_timestamps), 
-                       values=array(res_values))
+        return self._plotter(self._type, timestamps=array(res_timestamps), 
+                             values=array(res_values))
     
     def downsample_mean(self):
         """Downsample data using the Numpy mean function.
@@ -253,8 +272,8 @@ class DatasetContainer:
         
         Returns
         -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
+            class
+                A class that provides plotting of the data set.
         """
         return self._downsample_data(mean)
     
@@ -267,10 +286,42 @@ class DatasetContainer:
         
         Returns
         -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
+            class
+                A class that provides plotting of the data set.
         """
         return self._downsample_data(median)
+    
+    def downsample_sum(self):
+        """Downsample data using the Numpy sum function.
+
+        Parameters
+        ----------
+            None
+        
+        Returns
+        -------
+            class
+                A class that provides plotting of the data set.
+        """
+        return self._downsample_data(sum)
+    
+    def downsample_none(self):
+        """Don't downsample, just return full-resolution data as saved in the 
+        dataset.
+
+        Parameters
+        ----------
+            None
+        
+        Returns
+        -------
+            class
+                A class that provides plotting of the data set.
+        """
+        res_timestamps = self['timestamps'] 
+        res_values = self['values']
+        return self._plotter(self._type, timestamps=array(res_timestamps), 
+                             values=array(res_values))
     
     def downsample_histogram(self, hist_min=None, hist_max=None, 
                              resolution=5):
@@ -295,8 +346,8 @@ class DatasetContainer:
         
         Returns
         -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
+            class
+                A class that provides plotting of the data set.
         """
         if hist_min is None:
             #Take the minimum, round to nearest 10
@@ -317,41 +368,9 @@ class DatasetContainer:
             res_histogram.append(hist)
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
-        return Plotter(self._type, timestamps=array(res_timestamps), bins=bins, 
-                       histogram=array(res_histogram))
+        return self._plotter(self._type, timestamps=array(res_timestamps), 
+                             bins=bins, histogram=array(res_histogram))
 
-    def downsample_sum(self):
-        """Downsample data using the Numpy sum function.
-
-        Parameters
-        ----------
-            None
-        
-        Returns
-        -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
-        """
-        return self._downsample_data(sum)
-    
-    def downsample_none(self):
-        """Don't downsample, just return full-resolution data as saved in the 
-        dataset.
-
-        Parameters
-        ----------
-            None
-        
-        Returns
-        -------
-            plotting.Plotter
-                A Plotter object that plots the downsampled data.
-        """
-        res_timestamps = self['timestamps'] 
-        res_values = self['values']
-        return Plotter(self._type, timestamps=array(res_timestamps), 
-                       values=array(res_values))
-    
     def _timeslice_data(self, timestamp_start, timestamp_end):
         """Helper function to perform the actual time slicing common to
         downsampling. Returns a DatasetContainer with the data for which
