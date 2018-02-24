@@ -3,6 +3,7 @@
 
 from ..filter_provider import dataset_filter
 from numpy import array
+from datetime import datetime
 
 def test_addition():
     """Test adding a valid filter to the dataset_filter class. The filter should
@@ -56,7 +57,16 @@ def test_heartrate_filter():
     """Test the function of the heartrate filter."""
     ds_filter = dataset_filter()
     ds_filter.add_filter('heartrate')    
-    test_times = array((1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+    test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
+                        datetime(2018, 1, 1, 12, 1, 0), 
+                        datetime(2018, 1, 1, 12, 2, 0), 
+                        datetime(2018, 1, 1, 12, 3, 0), 
+                        datetime(2018, 1, 1, 12, 4, 0), 
+                        datetime(2018, 1, 1, 12, 5, 0), 
+                        datetime(2018, 1, 1, 12, 6, 0), 
+                        datetime(2018, 1, 1, 12, 7, 0), 
+                        datetime(2018, 1, 1, 12, 8, 0), 
+                        datetime(2018, 1, 1, 12, 9, 0)))
     test_values = array((50, 52, 51, 101, 53, 52, 50, 106, 51, 52))
     res_times, res_values = ds_filter(test_times, test_values)
     assert (test_times == res_times).all()
@@ -65,7 +75,16 @@ def test_heartrate_filter():
 def test_no_filter():
     """Test that no filter returns the dataset unmodified."""
     ds_filter = dataset_filter()
-    test_times = array((1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+    test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
+                        datetime(2018, 1, 1, 12, 1, 0), 
+                        datetime(2018, 1, 1, 12, 2, 0), 
+                        datetime(2018, 1, 1, 12, 3, 0), 
+                        datetime(2018, 1, 1, 12, 4, 0), 
+                        datetime(2018, 1, 1, 12, 5, 0), 
+                        datetime(2018, 1, 1, 12, 6, 0), 
+                        datetime(2018, 1, 1, 12, 7, 0), 
+                        datetime(2018, 1, 1, 12, 8, 0), 
+                        datetime(2018, 1, 1, 12, 9, 0)))
     test_values = array((50, 52, 51, 101, 53, 52, 50, 106, 51, 52))
     res_times, res_values = ds_filter(test_times, test_values)
     assert (test_times == res_times).all()
