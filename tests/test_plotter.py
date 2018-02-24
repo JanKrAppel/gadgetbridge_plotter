@@ -7,6 +7,7 @@ from numpy import array
 import pytest
 
 def test_lineplot_construction():
+    """Test that instances for lineplots get constructed correctly."""
     test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
                         datetime(2018, 1, 1, 12, 1, 0), 
                         datetime(2018, 1, 1, 12, 2, 0), 
@@ -25,6 +26,7 @@ def test_lineplot_construction():
     assert plotter._type == 'test plot'
 
 def test_histogram_construction():
+    """Test that instances for histogram plots get constructed correctly."""
     test_times = array((datetime(2018, 1, 1, 12, 0, 0), 
                         datetime(2018, 1, 1, 12, 1, 0), 
                         datetime(2018, 1, 1, 12, 2, 0), 
@@ -55,5 +57,6 @@ def test_histogram_construction():
     assert plotter._type == 'test plot'
     
 def test_invalid_construction():
+    """Test that instantiation with incorrect arguments raise an exception."""
     with pytest.raises(InvalidArgumentsException):
         plotter = Plotter('test plot', foo=1, bar=1)
