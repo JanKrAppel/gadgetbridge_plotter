@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sqlite3
+import time
 from datetime import datetime
 from device_db_mapping import device_db_mapping
 from dataset_container import DatasetContainer
@@ -153,7 +154,8 @@ class GadgetbridgeDatabase:
         else:
             return None
 
-    def _build_querystring(self, dataset):
+    def _build_querystring(self, dataset, timestamp_min=None, 
+                           timestamp_max=None):
         """Build a Sqlite query to pull the dataset from the database.
         
         Parameters
@@ -166,18 +168,47 @@ class GadgetbridgeDatabase:
                     * intensity
                     * activity
                     * steps
+            timestamp_min : datetime.datetime, None
+                The lower limit (included) to return data for. If None, no 
+                lower limit will be set.
+            timestamp_max : datetime.datetime, None
+                The upper limit (not included) to return data for If None, no
+                upper limit will be set.
         
         Returns
         -------
             string
                 An SQLite query string for the requested dataset
         """
-        query_template = 'SELECT {dataset_col:s} FROM {table:s};'
-        return query_template.format(dataset_col=self._db_names['timestamp'] + \
-                                         ', ' + self._db_names[dataset],
+        restrictions = []
+        if not timestamp_min is None:
+            #val is the string of the Unix timestamp of the datetime:
+            val = str(int(time.mktime(timestamp_min.timetuple())))
+            restrictions.append([self._db_names['timestamp'],
+                                 '>=', val])
+        if not timestamp_max is None:
+            #val is the string of the Unix timestamp of the datetime:
+            val = str(int(time.mktime(timestamp_max.timetuple())))
+            restrictions.append([self._db_names['timestamp'],
+                                 '<', val])
+        #Build the base query (timestamps is always selected):
+        query_template = 'SELECT {dataset_col:s} FROM {table:s}'
+        dataset_cols = self._db_names['timestamp'] + ', '\
+            + self._db_names[dataset]
+        res = query_template.format(dataset_col=dataset_cols,
                                      table=self._db_names['table'])
+        #Append restriction expressions, if there are any:
+        if len(restrictions) != 0:
+            field, operator, limit = restrictions[0]
+            query_restrictions = ' WHERE ' + field + ' ' + operator + ' '\
+                + limit
+            for field, operator, limit in restrictions[1:]:
+                query_restrictions += ' AND ' + field + ' ' + operator + ' '\
+                    + limit
+            res += query_restrictions 
+        return res + ';'
         
-    def query_dataset(self, dataset):
+    def query_dataset(self, dataset, timestamp_min=None, timestamp_max=None):
         """Builds the query to pull a dataset from the database and executes it.
         
         Parameters
@@ -190,6 +221,12 @@ class GadgetbridgeDatabase:
                     * intensity
                     * activity
                     * steps
+            timestamp_min : datetime.datetime, None
+                The lower limit (included) to return data for. If None, no 
+                lower limit will be set.
+            timestamp_max : datetime.datetime, None
+                The upper limit (not included) to return data for If None, no
+                upper limit will be set.
         
         Returns
         -------
@@ -201,9 +238,12 @@ class GadgetbridgeDatabase:
         if not dataset in datasets:
             raise LookupError('Dataset not available, must be in ' + \
                               str(datasets))
-        self._query(self._build_querystring(dataset))
+        self._query(self._build_querystring(dataset,
+                                            timestamp_min=timestamp_min, 
+                                            timestamp_max=timestamp_max))
         
-    def retrieve_dataset(self, dataset, **kwargs):
+    def retrieve_dataset(self, dataset, timestamp_min=None, timestamp_max=None,
+                         **kwargs):
         """Retrieve a dataset from the database.
         
         Parameters
@@ -216,6 +256,12 @@ class GadgetbridgeDatabase:
                 * intensity
                 * activity
                 * steps
+            timestamp_min : datetime.datetime, None
+                The lower limit (included) to return data for. If None, no 
+                lower limit will be set.
+            timestamp_max : datetime.datetime, None
+                The upper limit (not included) to return data for If None, no
+                upper limit will be set.
             kwargs : dict
                 Any other named parameters will be passed to the 
                 DatasetContainer instance returned.
@@ -225,19 +271,22 @@ class GadgetbridgeDatabase:
             res : DatasetContainer
                 The container with the retrieved dataset.
         """
-        self.query_dataset(dataset)
+        self.query_dataset(dataset, timestamp_min=timestamp_min, 
+                           timestamp_max=timestamp_max)
         res = DatasetContainer(dataset, **kwargs)
         for ts, val in self.results:
             res.append(datetime.fromtimestamp(ts), val)
         return res
     
 if __name__ == '__main__':
-    from datetime import timedelta
+    from datetime import timedelta, datetime
     from sys import argv
     from matplotlib import gridspec, pyplot as plt
-    time_resolution = timedelta(days=1)
+    start = datetime(2018, 2, 14, 0, 0, 0)
+    end = datetime(2018, 2, 14, 23, 59, 59)
+    time_resolution = timedelta(hours=1)
     db = GadgetbridgeDatabase(argv[1], 'MI Band')
-    heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
+    heartrate = db.retrieve_dataset('heartrate', timestamp_min=start, timestamp_max=end, time_resolution=time_resolution)
     heartrate.add_filter('heartrate')
     steps = db.retrieve_dataset('steps', time_resolution=time_resolution)
     fig = plt.figure()
@@ -247,5 +296,6 @@ if __name__ == '__main__':
     plt.xticks([])
     plt.subplot(gs[1])
     plt.subplots_adjust(hspace=0)
+    print steps.time_resolution()
     steps.downsample_sum().plot()
     plt.savefig(argv[2])

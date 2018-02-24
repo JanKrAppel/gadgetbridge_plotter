@@ -365,7 +365,8 @@ class DatasetContainer:
         
             hist = histogram(sliced_data['values'], bins, density=True)[0]
             res_timestamps.append(cur_time)
-            res_histogram.append(hist)
+            #Scale the maximum of each histogram row to 1:
+            res_histogram.append(hist/amax(hist))
             cur_time += self.time_resolution()
         res_timestamps.append(self.timestamp_end())
         return self._plotter(self._type, timestamps=array(res_timestamps), 

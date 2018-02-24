@@ -93,3 +93,157 @@ def test_get_timerange(dataset_container):
     timerange = dataset_container.timerange() 
     assert timerange == [datetime(2018, 1, 1, 12, 0, 0), 
                          datetime(2018, 1, 1, 12, 2, 0)] 
+
+def test_timeslice_data(dataset_container):
+    """Test that timeslicing returns the correct time range."""
+    start = datetime(2018, 1, 1, 12, 3, 0)
+    end = datetime(2018, 1, 1, 12, 8, 0)
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 3, 0),
+                                 datetime(2018, 1, 1, 12, 4, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 6, 0),
+                                 datetime(2018, 1, 1, 12, 7, 0)))
+    res = dataset_container._timeslice_data(start, end)
+    res_timestamps = res['timestamps']
+    assert (expected_timestamps == res_timestamps).all()
+    dataset_container.time_resolution(timedelta(hours=1))
+    res = dataset_container._timeslice_data(start, end)
+    res_timestamps = res['timestamps']
+    assert (expected_timestamps == res_timestamps).all()
+
+def test_downsample_none(dataset_container):
+    """Test that the non-downsampling method actually doesn't do anything."""
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0),
+                                 datetime(2018, 1, 1, 12, 1, 0),
+                                 datetime(2018, 1, 1, 12, 2, 0),
+                                 datetime(2018, 1, 1, 12, 3, 0),
+                                 datetime(2018, 1, 1, 12, 4, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 6, 0),
+                                 datetime(2018, 1, 1, 12, 7, 0),
+                                 datetime(2018, 1, 1, 12, 8, 0),
+                                 datetime(2018, 1, 1, 12, 9, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0)))
+    expected_values = array((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+    plotter = dataset_container.downsample_none()
+    assert (plotter._timestamps == expected_timestamps).all()
+    assert (plotter._values == expected_values).all()
+
+def test_downsample_sum(dataset_container):
+    """Test that the sum downsampling works correctly."""
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0)))
+    expected_values = array((15, 40, 11))
+    plotter = dataset_container.downsample_sum()
+    assert (plotter._timestamps == expected_timestamps).all()
+    assert (plotter._values == expected_values).all()
+
+def test_downsample_median(dataset_container):
+    """Test that the median downsampling works correctly."""
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0)))
+    expected_values = array((3, 8, 11))
+    plotter = dataset_container.downsample_median()
+    assert (plotter._timestamps == expected_timestamps).all()
+    assert (plotter._values == expected_values).all()
+
+def test_downsample_mean(dataset_container):
+    """Test that the mean downsampling works correctly."""
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0)))
+    expected_values = array((3, 8, 11))
+    plotter = dataset_container.downsample_mean()
+    assert (plotter._timestamps == expected_timestamps).all()
+    assert (plotter._values == expected_values).all()
+
+def test_downsample_histogram(dataset_container):
+    """Test that the histogram downsampling works correctly."""
+    dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
+    dataset_container.append(datetime(2018, 1, 1, 12, 1, 0), 2)
+    dataset_container.append(datetime(2018, 1, 1, 12, 2, 0), 3)
+    dataset_container.append(datetime(2018, 1, 1, 12, 3, 0), 4)
+    dataset_container.append(datetime(2018, 1, 1, 12, 4, 0), 5)
+    dataset_container.append(datetime(2018, 1, 1, 12, 5, 0), 6)
+    dataset_container.append(datetime(2018, 1, 1, 12, 6, 0), 7)
+    dataset_container.append(datetime(2018, 1, 1, 12, 7, 0), 8)
+    dataset_container.append(datetime(2018, 1, 1, 12, 8, 0), 9)
+    dataset_container.append(datetime(2018, 1, 1, 12, 9, 0), 10)
+    dataset_container.append(datetime(2018, 1, 1, 12, 10, 0), 11)
+    dataset_container.time_resolution(timedelta(minutes=5))
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0),
+                                 datetime(2018, 1, 1, 12, 5, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0),
+                                 datetime(2018, 1, 1, 12, 10, 0)))
+    expected_bins = array((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+    expected_histogram = array(((1., 1., 1., 1., 1., 0., 0., 0., 0., 0.),
+                                (0., 0., 0., 0., 0., 1., 1., 1., 1., 1.),
+                                (0., 0., 0., 0., 0., 0., 0., 0., 0., 1.)))
+    #hist_max=12, because it is passed as max value to arange
+    plotter = dataset_container.downsample_histogram(hist_min=1, hist_max=12, 
+                                                     resolution=1)
+    assert (plotter._timestamps == expected_timestamps).all()
+    assert (plotter._bins == expected_bins).all()
+    assert (plotter._histogram == expected_histogram).all()
