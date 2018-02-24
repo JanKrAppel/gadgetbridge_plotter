@@ -243,7 +243,7 @@ class GadgetbridgeDatabase:
                                             timestamp_max=timestamp_max))
         
     def retrieve_dataset(self, dataset, timestamp_min=None, timestamp_max=None,
-                         **kwargs):
+                         time_resolution=None):
         """Retrieve a dataset from the database.
         
         Parameters
@@ -262,9 +262,9 @@ class GadgetbridgeDatabase:
             timestamp_max : datetime.datetime, None
                 The upper limit (not included) to return data for If None, no
                 upper limit will be set.
-            kwargs : dict
-                Any other named parameters will be passed to the 
-                DatasetContainer instance returned.
+            time_resolution : datetime.timedelta, None
+                The time resolution of the dataset container returned. If None,
+                the default of 1 minute will be used.
         
         Returns
         -------
@@ -273,20 +273,19 @@ class GadgetbridgeDatabase:
         """
         self.query_dataset(dataset, timestamp_min=timestamp_min, 
                            timestamp_max=timestamp_max)
-        res = DatasetContainer(dataset, **kwargs)
+        res = DatasetContainer(dataset, time_resolution=time_resolution)
         for ts, val in self.results:
             res.append(datetime.fromtimestamp(ts), val)
         return res
     
 if __name__ == '__main__':
-    from datetime import timedelta, datetime
+    from datetime import timedelta
     from sys import argv
     from matplotlib import gridspec, pyplot as plt
-    start = datetime(2018, 2, 14, 0, 0, 0)
-    end = datetime(2018, 2, 14, 23, 59, 59)
-    time_resolution = timedelta(hours=1)
+    time_resolution = timedelta(days=1)
     db = GadgetbridgeDatabase(argv[1], 'MI Band')
-    heartrate = db.retrieve_dataset('heartrate', timestamp_min=start, timestamp_max=end, time_resolution=time_resolution)
+    time_resolution=timedelta(days=1)
+    heartrate = db.retrieve_dataset('heartrate', time_resolution=time_resolution)
     heartrate.add_filter('heartrate')
     steps = db.retrieve_dataset('steps', time_resolution=time_resolution)
     fig = plt.figure()
@@ -296,6 +295,5 @@ if __name__ == '__main__':
     plt.xticks([])
     plt.subplot(gs[1])
     plt.subplots_adjust(hspace=0)
-    print steps.time_resolution()
     steps.downsample_sum().plot()
     plt.savefig(argv[2])
