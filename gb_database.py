@@ -2,25 +2,47 @@
 # -*- coding: utf-8 -*-
 
 class result_iterator:
-    """
-    A class used to iterate over sqlite3 cursor results in a for loop.
-    """
+    """A class used to iterate over sqlite3 cursor results in a for loop."""
     
     def __init__(self, cursor):
-        """
-        Initialize the interface with a cursor.
+        """Initialize the interface with a cursor.
+        
+        Parameters
+        ----------
+            cursor : sqlite.Cursor
+                The database cursor pointing to the results
+        
+        Returns
+        -------
+            None
         """
         self._cursor = cursor
 
     def __iter__(self):
-        """
-        Return self.
+        """Return self for iteration.
+        
+        Parameters
+        ----------
+            None
+        
+        Returns
+        -------
+            self : result_iterator
+                This instance
         """
         return self
     
     def next(self):
-        """
-        Iterate over the cursor result items.
+        """Iterate over the cursor result items.
+        
+        Parameters
+        ----------
+            None
+            
+        Returns
+        -------
+            item : sequence
+                One row of results
         """
         item = self._cursor.fetchone()
         if not item is None:
@@ -29,20 +51,37 @@ class result_iterator:
             raise StopIteration
             
     def all(self):
-        """
-        Convenience function to return all result items at once.
+        """Convenience function to return all result items at once.
+        
+        Parameters
+        ----------
+            None
+        
+        Returns
+        -------
+            list
+                A list containing all rows
         """
         return self._cursor.fetchall()
 
 class gb_database:
-    """
-    Provides a simple abstraction layer around the Sqlite DB.
-    """
+    """Provides a simple abstraction layer around the Sqlite DB."""
     
     def __init__(self, filename, device):
-        """
-        Initiate the interface. Pass a filename and a device name. The device
+        """Initiate the interface. Pass a filename and a device name. The device
         name is used to pull database table mapping.
+        
+        Parameters
+        ----------
+            filename : string
+                The name of the SQLite database file to open
+            device : string
+                The name of the device the data is stored for. This selects
+                table mappings for the database.
+        
+        Returns
+        -------
+            None
         """
         import sqlite3
         from device_db_mapping import device_db_mapping
@@ -56,23 +95,49 @@ class gb_database:
         self._db_names = device_db_mapping[self.device]
         
     def __del__(self):
+        """Clear the class instance. This closes the database cleanly.
+        
+        Parameters
+        ----------
+            None
+        
+        Returns
+        -------
+            None
+        """
         self._cursor.close()
         self._db.close()
         
     def _query(self, querystring):
-        """
-        Execute a query on the database.
+        """Execute a query on the database.
+        
+        Parameters
+        ----------
+            querystring : string
+                The SQLite query string
+        
+        Returns
+        -------
+            None
         """
         self._cursor.execute(querystring)
         
     def query_tableinfo(self, table_name):
-        """
-        Retrieve info about a table in the database. Returns a dict containing
-        the entries:
-            - index
-            - name
-            - type
+        """Retrieve info about a table in the database. Returns a dict 
+        containing the entries:
+            * index
+            * name
+            * type
         for each of the columns in the table.
+        
+        Parameters
+        ----------
+            table_name : string
+                The name of the table that the layout should be queried for.
+        
+        Returns
+        -------
+            None
         """
         if table_name in self.tables:
             self.query('pragma table_info({table_name:s});'.format(
@@ -87,14 +152,23 @@ class gb_database:
             return None
 
     def _build_querystring(self, dataset):
-        """
-        Build a Sqlite query to pull the dataset from the database.
-        Dataset must be one of the following:
-            - timestamp
-            - heartrate
-            - intensity
-            - activity
-            - steps
+        """Build a Sqlite query to pull the dataset from the database.
+        
+        Parameters
+        ----------
+            dataset : string
+                The dataset to build a query string for. Must be one of the 
+                following:
+                    * timestamp
+                    * heartrate
+                    * intensity
+                    * activity
+                    * steps
+        
+        Returns
+        -------
+            string
+                An SQLite query string for the requested dataset
         """
         query_template = 'SELECT {dataset_col:s} FROM {table:s};'
         return query_template.format(dataset_col=self._db_names['timestamp'] + \
@@ -102,14 +176,22 @@ class gb_database:
                                      table=self._db_names['table'])
         
     def query_dataset(self, dataset):
-        """
-        Builds the query to pull a dataset from the database and executes it.
-        Dataset must be one of the following:
-            - timestamp
-            - heartrate
-            - intensity
-            - activity
-            - steps
+        """Builds the query to pull a dataset from the database and executes it.
+        
+        Parameters
+        ----------
+            dataset : string
+                The dataset to query from the database. Must be one of the 
+                following:
+                    * timestamp
+                    * heartrate
+                    * intensity
+                    * activity
+                    * steps
+        
+        Returns
+        -------
+            None
         """
         datasets = self._db_names.keys()
         datasets.remove('table')
@@ -120,18 +202,26 @@ class gb_database:
         self._query(self._build_querystring(dataset))
         
     def retrieve_dataset(self, dataset, **kwargs):
-        """
-        Retrieve a dataset. Returns a dict with two entries containing a list 
-        each:
-            - timestamp
-            - dataset
-        Timestamp is formatted as datetime. Dataset must be one of the 
-        following:
-            - timestamp
-            - heartrate
-            - intensity
-            - activity
-            - steps
+        """Retrieve a dataset from the database.
+        
+        Parameters
+        ----------
+            dataset : string
+                The dataset to retrieve from the database. Must be one of the 
+            following:
+                * timestamp
+                * heartrate
+                * intensity
+                * activity
+                * steps
+            kwargs : dict
+                Any other named parameters will be passed to the 
+                dataset_container instance returned.
+        
+        Returns
+        -------
+            res : dataset_container
+                The container with the retrieved dataset.
         """
         from datetime import datetime
         from dataset_container import dataset_container
