@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from numpy import arange
 
 class AcceptanceTester:
     """Tests data points for acceptance into dataset_container."""
@@ -190,7 +191,6 @@ class DatasetFilter:
         -------
             None
         """
-        from numpy import arange
         for i in arange(1, len(values) - 1):
             diff_lower = abs((float(values[i])/2.) - values[i - 1])
             diff_upper = abs((float(values[i])/2.) - values[i + 1])

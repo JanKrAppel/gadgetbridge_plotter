@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+        from numpy import array, arange, amin, amax, histogram
+        from numpy import column_stack, median, mean, sum
+        from plotting import Plotter
+        from datetime import timedelta
+        from filter_provider import DatasetFilter, AcceptanceTester
 
 class DatasetContainer:
     """Contains one single dataset. Holds a list of Datapoint instances 
@@ -20,8 +25,6 @@ class DatasetContainer:
         -------
             None
         """
-        from datetime import timedelta
-        from filter_provider import DatasetFilter, AcceptanceTester
         self._type = dataset_type
         self._datapoints = []
         self._index = 0
@@ -93,7 +96,6 @@ class DatasetContainer:
                 Depending on the selected item, an array containing the 
                 timestamps or values stored in the container are returned. 
         """
-        from numpy import array
         if self._filtered_data is None:
             timestamps, values = [], []
             for point in self._datapoints:
@@ -161,7 +163,6 @@ class DatasetContainer:
             _time_resolution : datetime.timedelta
                 The time resolution of the dataset after the function finishes
         """
-        from datetime import timedelta
         if not value is None:
             if value < timedelta(minutes=1):
                 raise ValueError('Time resolution cannot be lower than 1 min.')
@@ -230,8 +231,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import array
-        from plotting import Plotter
         cur_time = self.timestamp_start()
         res_timestamps = []
         res_values = []
@@ -257,7 +256,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import mean
         return self._downsample_data(mean)
     
     def downsample_median(self):
@@ -272,7 +270,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import median
         return self._downsample_data(median)
     
     def downsample_histogram(self, hist_min=None, hist_max=None, 
@@ -301,8 +298,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import array, arange, amin, amax, histogram
-        from plotting import Plotter
         if hist_min is None:
             #Take the minimum, round to nearest 10
             hist_min = int(amin(self['values'])/10)*10
@@ -337,7 +332,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import sum
         return self._downsample_data(sum)
     
     def downsample_none(self):
@@ -353,8 +347,6 @@ class DatasetContainer:
             plotting.Plotter
                 A Plotter object that plots the downsampled data.
         """
-        from numpy import array
-        from plotting import Plotter
         res_timestamps = self['timestamps'] 
         res_values = self['values']
         return Plotter(self._type, timestamps=array(res_timestamps), 
@@ -377,7 +369,6 @@ class DatasetContainer:
             res : DatasetContainer
                 A container with the data between the start and end values.
         """
-        from numpy import array, column_stack
         timestamps = array(self['timestamps']) 
         values = array(self['values'])
         mask = (timestamps >= timestamp_start)*(timestamps < timestamp_end)

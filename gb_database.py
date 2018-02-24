@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sqlite3
+from datetime import datetime
+from device_db_mapping import device_db_mapping
+from dataset_container import DatasetContainer
 
 class ResultIterator:
     """A class used to iterate over sqlite3 cursor results in a for loop."""
@@ -83,8 +87,6 @@ class GadgetbridgeDatabase:
         -------
             None
         """
-        import sqlite3
-        from device_db_mapping import device_db_mapping
         self._db_filename = filename
         self._db = sqlite3.connect(self._db_filename)
         self._cursor = self._db.cursor()
@@ -223,8 +225,6 @@ class GadgetbridgeDatabase:
             res : DatasetContainer
                 The container with the retrieved dataset.
         """
-        from datetime import datetime
-        from dataset_container import DatasetContainer
         self.query_dataset(dataset)
         res = DatasetContainer(dataset, **kwargs)
         for ts, val in self.results:

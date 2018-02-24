@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from matplotlib import pyplot as plt
+from numpy import amin, amax
 
 class Plotter:
     """A class that creates plots from data."""
@@ -68,8 +70,6 @@ class Plotter:
         -------
             None
         """
-        from matplotlib import pyplot as plt
-        from numpy import amin, amax
         plt.plot(self._timestamps, self._values)
         plt.ylabel(self._type)
         plt.xlim(amin(self._timestamps), amax(self._timestamps))
@@ -86,8 +86,6 @@ class Plotter:
         -------
             None
         """
-        from matplotlib import pyplot as plt
-        from numpy import amin, amax
         plt.pcolormesh(self._timestamps, self._bins, self._histogram.T)
         plt.xlim(amin(self._timestamps), amax(self._timestamps))
         plt.ylabel(self._type + ' histogram')
