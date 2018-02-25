@@ -21,12 +21,18 @@ def test_add_filter(dataset_container):
 def test_append(dataset_container):
     """Test that data points get appended correctly."""
     dataset_container.append(datetime(2018, 1, 1, 12, 0, 0), 1)
-    assert len(dataset_container._datapoints) == 1
-    assert dataset_container._datapoints[0].value == 1 \
-        and dataset_container._datapoints[0].timestamp == datetime(2018, 
+    expected_timestamps = array((datetime(2018, 1, 1, 12, 0, 0)))
+    expected_values = array((1))
+    assert len(dataset_container._raw_datapoints) == 1
+    assert dataset_container._raw_datapoints[0].value == 1 \
+        and dataset_container._raw_datapoints[0].timestamp == datetime(2018, 
                                                                    1, 
                                                                    1, 
                                                                    12, 0, 0)
+    assert (dataset_container._filtered_data['timestamps'] == 
+            expected_timestamps).all() \
+            and (dataset_container._filtered_data['values'] == 
+                 expected_values).all()
 
 def test_iteration(dataset_container):
     """Test that iteration correctly returns the sequence of datapoints 

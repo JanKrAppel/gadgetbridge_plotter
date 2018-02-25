@@ -37,7 +37,7 @@ class DatasetContainer:
             None
         """
         self._type = dataset_type
-        self._datapoints = []
+        self._raw_datapoints = []
         self._index = 0
         self._time_resolution = time_resolution
         self._accept = AcceptanceTester(self._type)
@@ -53,7 +53,8 @@ class DatasetContainer:
             self._plotter = plotter
         else:
             raise ValueError('Got an invalid plotter')
-        self._filtered_data = None
+        self._data_up_to_date = True
+        self._update_filtered_data()
         
     def add_filter(self, filter_type, **kwargs):
         """Add a new filter to the filter provider. filter_type selects the 
@@ -74,10 +75,7 @@ class DatasetContainer:
             None
         """
         self._filters.add_filter(filter_type, **kwargs)
-        self._filtered_data = None
-        #This is done to update self._filtered_data:
-        timestamps = self['timestamps']
-        values = self['values']
+        self._data_up_to_date = False
 
     def append(self, timestamp, value):
         """Append a Datapoint(timestamp, value) to the dataset. Depending on the
@@ -97,7 +95,8 @@ class DatasetContainer:
         """
         dp = Datapoint(timestamp, value)
         if self._accept(dp):
-            self._datapoints.append(dp)
+            self._raw_datapoints.append(dp)
+            self._data_up_to_date = False
 
     def __getitem__(self, item):
         """Return list of timestamps when called with 'timestamps' or 0, and 
@@ -115,23 +114,34 @@ class DatasetContainer:
                 Depending on the selected item, an array containing the 
                 timestamps or values stored in the container are returned. 
         """
-        if self._filtered_data is None:
-            timestamps, values = [], []
-            for point in self._datapoints:
-                timestamps.append(point.timestamp)
-                values.append(point.value)
-            timestamps, values = self._filters(array(timestamps), 
-                                                array(values))
-            self._filtered_data = {'timestamps': timestamps, 'values': values}
-        else:
-            timestamps = self._filtered_data['timestamps']
-            values = self._filtered_data['values']
+        if not self._data_up_to_date:
+            self._update_filtered_data()
+            self._data_up_to_date = True
         if item == 'timestamps' or item == 0:
-            return timestamps
+            return self._filtered_data['timestamps']
         elif item == 'values' or item == 1:
-            return values
+            return self._filtered_data['values']
         else:
             raise IndexError('Invalid index')
+    
+    def _update_filtered_data(self):
+        """Update the filtered data cache from the raw datapoints.
+        
+        Parameters
+        ----------
+            None
+            
+        Returns
+        -------
+            None
+        """
+        timestamps, values = [], []
+        for point in self._raw_datapoints:
+            timestamps.append(point.timestamp)
+            values.append(point.value)
+        timestamps, values = self._filters(array(timestamps), 
+                                            array(values))
+        self._filtered_data = {'timestamps': timestamps, 'values': values}
     
     def __iter__(self):
         """Return self as iterator.
@@ -158,9 +168,9 @@ class DatasetContainer:
             Datapoint
                 The next Datapoint in the container
         """
-        if self._index < len(self._datapoints):
+        if self._index < len(self._raw_datapoints):
             self._index += 1
-            return self._datapoints[self._index - 1]
+            return self._raw_datapoints[self._index - 1]
         else:
             self._index = 0
             raise StopIteration
